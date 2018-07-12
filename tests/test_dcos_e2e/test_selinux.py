@@ -18,6 +18,8 @@ def test_selinux(oss_artifact: Path) -> None:
         public_agents=0,
         cluster_backend=cluster_backend,
     ) as cluster:
+        # This shows that we are in 'permissive' mode, not 'enforcing' mode.
+        # A next step is to change this mode.
         expected_sestatus = dedent(
             """
             SELinux status:                 enabled
