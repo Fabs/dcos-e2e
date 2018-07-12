@@ -37,7 +37,8 @@ def test_selinux(oss_artifact: Path) -> None:
             sudo=True,
         )
 
-        assert sestatus_result.stdout.decode().strip() == expected_sestatus
+        sestatus_output = sestatus_result.stdout.decode().strip()
+        assert sestatus_output == expected_sestatus.strip()
         return
 
         cluster.install_dcos_from_path(
