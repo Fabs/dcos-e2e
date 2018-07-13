@@ -104,26 +104,44 @@ class TestVMDescription:  # pragma: nocover
         with Cluster(
             cluster_backend=Vagrant(),
             masters=1,
-            agents=0,
-            public_agents=0,
+            agents=1,
+            public_agents=1,
         ) as cluster:
-            (master, ) = cluster.masters
-            new_vm_name = _get_vm_from_node(node=master)
-            description = _description_from_vm_name(vm_name=new_vm_name)
-            assert description is None
+            nodes = {*cluster.masters, *cluster.agents, *cluster.public_agents}
+            for node in nodes:
+                new_vm_name = _get_vm_from_node(node=node)
+                description = _description_from_vm_name(vm_name=new_vm_name)
+                assert description is None
 
-    def test_custom(self):
+    def test_master_description(self):
         """
         It is possible to set a custom description for VMs.
         """
-        description = uuid.uuid4().hex
+        master_description = uuid.uuid4().hex
+        agent_description = uuid.uuid4().hex
+        public_agent_description = uuid.uuid4().hex
+
+
         with Cluster(
             cluster_backend=Vagrant(virtualbox_description=description),
             masters=1,
-            agents=0,
-            public_agents=0,
+            agents=1,
+            public_agents=1,
         ) as cluster:
             (master, ) = cluster.masters
+            (agent, ) = cluster.agents
+            (public_agent, ) = cluster.public_agents
+
             new_vm_name = _get_vm_from_node(node=master)
-            vm_description = _description_from_vm_name(vm_name=new_vm_name)
-            assert vm_description == description
+            vm_master_description = _description_from_vm_name(vm_name=new_vm_name)
+            assert vm_master_description == master_description
+
+            new_vm_name = _get_vm_from_node(node=agent)
+            vm_agent_description = _description_from_vm_name(vm_name=new_vm_name)
+            assert vm_agent_description == agent_description
+
+            new_vm_name = _get_vm_from_node(node=public_agent)
+            vm_public_agent_description = _description_from_vm_name(
+                vm_name=new_vm_name,
+            )
+            assert vm_public_agent_description == public_agent_description
