@@ -117,6 +117,7 @@ class Docker(ClusterBackend):
         docker_public_agent_labels: Optional[Dict[str, str]] = None,
         transport: Transport = Transport.SSH,
         network: Optional[docker.models.networks.Network] = None,
+        one_master_host_port_map: Optional[Dict[str, int]] = None,
     ) -> None:
         """
         Create a configuration for a Docker cluster backend.
@@ -157,6 +158,14 @@ class Docker(ClusterBackend):
                 custom network on macOS.
                 Therefore, it is recommended that you use this in conjunction
                 with the ``transport`` parameter.
+            one_master_host_port_map: The exposed host ports for one of the
+                master nodes. This is useful on macOS on which the container IP
+                is not directly accessible from the host. By exposing the host
+                ports, the user can reach the services on the master node using
+                the mapped host ports. The host port map will be applied to one
+                master only if there are multiple master nodes. See `ports` in
+                `Containers.run`_. Currently, only Transmission Control
+                Protocol is supported.
 
         Attributes:
             workspace_dir: The directory in which large temporary files will be
@@ -190,7 +199,14 @@ class Docker(ClusterBackend):
                 custom network on macOS.
                 Therefore, it is recommended that you use this in conjunction
                 with the ``transport`` parameter.
-
+            one_master_host_port_map: The exposed host ports for one of the
+                master nodes. This is useful on macOS on which the container IP
+                is not directly accessible from the host. By exposing the host
+                ports, the user can reach the services on the master node using
+                the mapped host ports. The host port map will be applied to one
+                master only if there are multiple master nodes. See `ports` in
+                `Containers.run`_. Currently, only Transmission Control
+                Protocol is supported.
 
         .. _Containers.run:
             http://docker-py.readthedocs.io/en/stable/containers.html#docker.models.containers.ContainerCollection.run
@@ -210,6 +226,7 @@ class Docker(ClusterBackend):
         self.docker_public_agent_labels = docker_public_agent_labels or {}
         self.transport = transport
         self.network = network
+        self.one_master_host_port_map = one_master_host_port_map or {}
 
     @property
     def cluster_cls(self) -> Type['DockerCluster']:
@@ -375,13 +392,30 @@ class DockerCluster(ClusterManager):
             *cluster_backend.custom_master_mounts,
         ]
 
+        for master_container_number in range(masters):
+            ports = {}  # type: Dict[str, int]
+            if master_container_number == 0:
+                ports = cluster_backend.one_master_host_port_map
+            start_dcos_container(
+                container_base_name=self._master_prefix,
+                container_number=master_container_number,
+                mounts=master_mounts,
+                tmpfs=node_tmpfs_mounts,
+                docker_image=docker_image_tag,
+                labels={
+                    **cluster_backend.docker_container_labels,
+                    **cluster_backend.docker_master_labels,
+                },
+                public_key_path=public_key_path,
+                docker_storage_driver=(
+                    cluster_backend.docker_storage_driver
+                ),
+                docker_version=cluster_backend.docker_version,
+                network=cluster_backend.network,
+                ports=ports,
+            )
+
         for nodes, prefix, labels, mounts in (
-            (
-                masters,
-                self._master_prefix,
-                cluster_backend.docker_master_labels,
-                master_mounts,
-            ),
             (
                 agents,
                 self._agent_prefix,
@@ -395,10 +429,10 @@ class DockerCluster(ClusterManager):
                 agent_mounts + cluster_backend.custom_public_agent_mounts,
             ),
         ):
-            for container_number in range(nodes):
+            for agent_container_number in range(nodes):
                 start_dcos_container(
                     container_base_name=prefix,
-                    container_number=container_number,
+                    container_number=agent_container_number,
                     mounts=mounts,
                     tmpfs=node_tmpfs_mounts,
                     docker_image=docker_image_tag,

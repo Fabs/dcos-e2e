@@ -224,6 +224,11 @@ class TestCreate:
                                               containers on a custom network on macOS.
                                               Therefore, it is recommended that you use this
                                               in conjunction with the "--transport" option.
+              --one-master-host-port-map TEXT
+                                              Publish a container port of one master node to
+                                              the host. Only Transmission Control Protocol
+                                              is supported currently. The syntax is
+                                              <HostPort>:<ContainerPort>
               --transport [docker-exec|ssh]   The communication transport to use. On macOS
                                               the SSH transport requires IP routing to be
                                               set up. See "dcos-docker setup-mac-network".It
