@@ -121,8 +121,14 @@ class TestVMDescription:  # pragma: nocover
         agent_description = uuid.uuid4().hex
         public_agent_description = uuid.uuid4().hex
 
+        cluster_backend = Vagrant(
+            master_virtualbox_description=master,
+            agent_virtualbox_description=agent,
+            public_agent_virtualbox_description=public_agent,
+        )
+
         with Cluster(
-            cluster_backend=Vagrant(virtualbox_description=description),
+            cluster_backend=cluster_backend,
             masters=1,
             agents=1,
             public_agents=1,
@@ -133,13 +139,13 @@ class TestVMDescription:  # pragma: nocover
 
             new_vm_name = _get_vm_from_node(node=master)
             vm_master_description = _description_from_vm_name(
-                vm_name=new_vm_name
+                vm_name=new_vm_name,
             )
             assert vm_master_description == master_description
 
             new_vm_name = _get_vm_from_node(node=agent)
             vm_agent_description = _description_from_vm_name(
-                vm_name=new_vm_name
+                vm_name=new_vm_name,
             )
             assert vm_agent_description == agent_description
 

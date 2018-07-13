@@ -36,8 +36,12 @@ class Vagrant(ClusterBackend):
                 created. These files will be deleted at the end of a test run.
                 This is equivalent to `dir` in
                 :py:func:`tempfile.mkstemp`.
-            virtualbox_description: A description string to add to VirtualBox
-                VMs.
+            master_virtualbox_description: A description string to add to
+                VirtualBox VMs for master nodes.
+            agent_virtualbox_description: A description string to add to
+                VirtualBox VMs for agent nodes.
+            public_agent_virtualbox_description: A description string to add to
+                VirtualBox VMs for public agent nodes.
 
         Attributes:
             workspace_dir: The directory in which large temporary files will be
